@@ -1,5 +1,5 @@
-var cols = 25;
-var rows = 25;
+var cols = 50;
+var rows = 50;
 
 var w, h;
 
@@ -10,7 +10,17 @@ var closedSet = [];
 var start;
 var end;
 var done = false;
-var winner = 0;
+var current;
+//var winner = 0;
+var started = false;
+
+
+const Colors = {
+	Normal: (0, 255, 0),
+	Wall: (244, 255, 0),
+	Start: (0, 255, 0),
+	End: (0, 255, 0)
+};
 
 function removeFromArray(arr, el) {
 	for (let i = arr.length - 1; i >= 0; i--) {
@@ -29,11 +39,12 @@ class Cell {
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
-		this.f = 0;
+		this.f = 0; //g+h
 		this.g = 0;
 		this.h = 0;
 		this.previous = undefined;
 		this.neighbours = [];
+		this.isWall = false;
 	}
 
 	addNeighbours(grid) {
@@ -56,7 +67,11 @@ class Cell {
 }
 
 function setup() {
-	createCanvas(400, 400);
+	createCanvas(600, 600);
+
+	button = createButton('START');
+	button.position(650, 80);
+	button.mousePressed(() => { started = true; });
 
 	w = width / cols;
 	h = height / rows;
@@ -72,9 +87,16 @@ function setup() {
 			grid[i][j].addNeighbours(grid)
 		}
 	}
-
 	start = grid[0][0];
+	//start.type = CellType.Start;
 	end = grid[cols - 1][rows - 1];
+	//end.type = CellType.End;
+
+	for (let i = 0; i < 80; i++) {
+		ranx = Math.ceil(random(20, cols - 2));
+		rany = Math.ceil(random(20, rows - 2));
+		grid[ranx][rany].isWall = true;
+	}
 
 	openSet.push(start);
 
@@ -82,18 +104,20 @@ function setup() {
 }
 
 function draw() {
-	if (openSet.length > 0 && done == false) {
+	//Draw is already a loop so no need for a while loop
+	if (openSet.length > 0 && done == false && started) {
+		var winner = 0;
 		for (let i = 0; i < openSet.length; i++) {
 			if (openSet[i].f < openSet[winner].f) {
 				winner = i;
-
 			}
 		}
-		var current = openSet[winner];
-
-		if (openSet[winner] == end) {
+		current = openSet[winner];
+		if (current == end) {
+			removeFromArray(openSet, current);
+			closedSet.push(current);
 			done = true;
-			console.log("done!");
+			console.log("Done!");
 		} else {
 			removeFromArray(openSet, current);
 			closedSet.push(current);
@@ -102,35 +126,44 @@ function draw() {
 			for (let i = 0; i < neighbours.length; i++) {
 
 				var neighbour = neighbours[i];
-				if (!closedSet.includes(neighbour)) {
-					var tempG = current.g + 1;
+
+				if (!closedSet.includes(neighbour) && !neighbour.isWall) {
+
+					var tempG = current.g + heuristics(neighbour, current);
 					if (openSet.includes(neighbour)) {
 						if (tempG < neighbour.g) {
 							neighbour.g = tempG;
+							neighbour.h = heuristics(neighbour, end);
+							neighbour.f = neighbour.g + neighbour.h;
+							neighbour.previous = current;
 						}
 					} else {
 						neighbour.g = tempG;
+						neighbour.h = heuristics(neighbour, end);
+						neighbour.f = neighbour.g + neighbour.h;
+						neighbour.previous = current;
 						openSet.push(neighbour);
 					}
 
-					neighbour.g = heuristics(neighbour, end);
-					neighbour.f = neighbour.g + neighbour.h;
-					neighbour.previous = current;
 
 				}
 			}
 		}
 	} else {
-		//console.log("error wala finish");
+		//Not processing
 	}
 
 
 
 	//Drawing stuff
-	background(0);
+	background(255);
 	for (let i = 0; i < cols; i++) {
 		for (let j = 0; j < rows; j++) {
-			grid[i][j].show(color(244));
+			if (grid[i][j].isWall) {
+				grid[i][j].show(color(44));
+			} else {
+				grid[i][j].show(color(244));
+			}
 		}
 	}
 	for (let i = 0; i < closedSet.length; i++) {
@@ -138,5 +171,24 @@ function draw() {
 	}
 	for (let i = 0; i < openSet.length; i++) {
 		openSet[i].show(color(0, 255, 0));
+	}
+	if (done) {
+		path = [];
+		var temp = current;
+		path.push(temp);
+		while (temp.previous) {
+			path.push(temp.previous);
+			temp = temp.previous;
+		}
+
+		noFill();
+		stroke(255, 0, 200);
+		strokeWeight(w / 3);
+		beginShape();
+		for (var i = 0; i < path.length; i++) {
+			vertex(path[i].x * w + w / 2, path[i].y * h + h / 2);
+		}
+		endShape();
+		strokeWeight(1);
 	}
 }
