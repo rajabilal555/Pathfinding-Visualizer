@@ -1,5 +1,5 @@
-var cols = 50;
-var rows = 50;
+var cols = 25;
+var rows = 25;
 
 var w, h;
 
@@ -92,7 +92,7 @@ function setup() {
 	end = grid[cols - 1][rows - 1];
 	//end.type = CellType.End;
 
-	for (let i = 0; i < 80; i++) {
+	for (let i = 0; i < 10; i++) {
 		ranx = Math.ceil(random(20, cols - 2));
 		rany = Math.ceil(random(20, rows - 2));
 		grid[ranx][rany].isWall = true;
@@ -191,4 +191,24 @@ function draw() {
 		endShape();
 		strokeWeight(1);
 	}
+}
+function mouseClicked(event) {
+	console.log(event);
+	var cell = getCellfromXY(event.x, event.y);
+	if (cell != undefined) {
+		cell.isWall = true;
+	}
+	//getCellfromXY(event.clientX, event.clientY);
+}
+
+function getCellfromXY(x, y) {
+	for (let i = 0; i < cols; i++) {
+		for (let j = 0; j < rows; j++) {
+			if ((x > i * w) && (x < (i * w) + w) && (y > j * h) && (y < (j * h) + h)) {
+				console.log(grid[i][j]);
+				return grid[i][j];
+			}
+		}
+	}
+
 }
